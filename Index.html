@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>灵活用工个税计算器 (完美适配版)</title>
+    <style>
+        :root {
+            --primary: #2b85e4;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --border: #e8eaec;
+            --text-main: #17233d;
+            --text-sub: #808695;
+            --red: #ed4014;
+            --green: #19be6b;
+        }
+
+        * {
+            box-sizing: border-box; /* 关键：防止内边距撑破宽度 */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            color: var(--text-main);
+            padding-bottom: 100px; /* 底部留白 */
+        }
+
+        h2 {
+            text-align: center;
+            margin: 10px 0 20px;
+            font-size: 20px;
+            color: var(--text-main);
+        }
+
+        /* --- 顶部设置卡片 --- */
+        .config-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block; /* 手机上独占一行 */
+            font-weight: bold;
+            margin-bottom: 8px; /* 标签和输入框的间距 */
+            font-size: 15px;
+        }
+
+        .input-group input {
+            width: 100%; /* 关键：填满屏幕宽度 */
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 18px; /* 大字体方便输入 */
+            font-weight: bold;
+            color: var(--primary);
+            background: #fdfdfd;
+            outline: none;
+            appearance: none; /* 去除iOS默认样式 */
+        }
+        
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* --- 月份列表 (核心自适应部分) --- */
+        /* 使用 Div 替代 Table，方便做弹性布局 */
+        .month-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 表头 (仅PC显示，手机隐藏) */
+        .list-header {
+            display: none; 
+            background: #e8eaec;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #515a6e;
+        }
+
+        .month-item {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column; /* 手机默认垂直排列 */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        /* 月份卡片的第一行：月份 + 输入框 */
+        .item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .m-label {
+            font-size: 16px;
+            font-weight: bold;
+            width: 50px;
+        }
+
+        .m-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .m-input-wrapper input {
+            width: 100%;
+            padding: 10px;
+            text-align: right;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 16px;
+            background: #fafafa;
+        }
+        
+        .m-input-wrapper input:focus {
+            background: #fff;
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* 月份卡片的第二行：显示计算结果 */
+        .item-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px dashed #f0f0f0;
+            font-size: 13px;
+        }
+
+        .status-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        .result-text {
+            color: var(--text-sub);
+        }
+        
+        .result-val {
+            font-weight: bold;
+            color: var(--text-main);
+            margin-left: 5px;
+        }
+
+        /* --- 结果分析区 --- */
+        .result-section {
+            margin-top: 20px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .res-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .res-row.highlight {
+            border-top: 1px solid #f0f0f0;
+            padding-top: 12px;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* --- 底部悬浮条 --- */
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .final-label { font-size: 14px; color: #666; }
+        .final-amt { font-size: 24px; font-weight: bold; color: var(--text-main); }
+        
+        .c-red { color: var(--red); }
+        .c-green { color: var(--green); }
+        .c-gray { color: #ccc; }
+
+        .tag-res { font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+        .bg-red { background: #fff1f0; color: var(--red); }
+        .bg-green { background: #f6ffed; color: var(--green); }
+        .bg-gray { background: #f7f7f7; color: #999; }
+
+        /* --- 桌面端适配 (大于768px时) --- */
+        @media (min-width: 768px) {
+            body { max-width: 900px; margin: 0 auto; }
+            
+            /* 顶部变为横向排列 */
+            .input-group { display: flex; align-items: center; margin-bottom: 0; flex: 1; margin-right: 20px;}
+            .input-group label { margin-bottom: 0; margin-right: 10px; white-space: nowrap; }
+            .config-card { display: flex; align-items: center; flex-wrap: wrap; }
+            .btn-row { margin-top: 0; width: 200px; }
+
+            /* 月份列表变为表格状 */
+            .list-header { display: grid; grid-template-columns: 80px 1fr 1fr 1fr 100px; gap: 10px; margin-bottom: 10px; text-align: center;}
+            
+            .month-item { 
+                display: grid; 
+                grid-template-columns: 80px 1fr 1fr 1fr 100px; 
+                gap: 10px; 
+                align-items: center; 
+                padding: 10px;
+            }
+            
+            .item-top { margin-bottom: 0; display: contents; } /* 消除手机版布局影响 */
+            .item-bottom { padding-top: 0; border-top: none; display: contents; } /* 消除手机版布局影响 */
+            
+            .m-input-wrapper { width: 100%; }
+            .m-label { text-align: center; width: auto; }
+            
+            /* 在PC上隐藏手机版特有的一些标签，或者调整显示方式 */
+            .status-tag, .result-text { text-align: center; display: block; }
+            .result-val { margin-left: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h2>灵活用工汇算计算器</h2>
+
+    <div class="config-card">
+        <div class="input-group">
+            <label>① 年度综合所得(税前)</label>
+            <input type="number" id="baseIncome" placeholder="工资/稿酬等" oninput="calculate()">
+        </div>
+        <div class="input-group">
+            <label>② 年度扣除(含6万)</label>
+            <input type="number" id="deduction" value="60000" placeholder="60000" oninput="calculate()">
+        </div>
+        <div class="btn-row">
+            <button class="btn" onclick="resetData()">清空</button>
+            <button class="btn btn-primary" onclick="loadDemo()">填入示例</button>
+        </div>
+    </div>
+
+    <div class="month-list" id="monthContainer">
+        <div class="list-header">
+            <div>月份</div>
+            <div>劳务收入(元)</div>
+            <div>状态</div>
+            <div>应纳税所得额</div>
+            <div>本期预扣税</div>
+        </div>
+        </div>
+
+    <div class="result-section" style="margin-bottom: 20px;">
+        <div style="font-weight:bold; margin-bottom:15px; border-left:4px solid var(--primary); padding-left:10px;">税负差异分析</div>
+        <div class="res-row">
+            <span>方案A: 仅综合所得</span>
+            <span id="taxA">0.00</span>
+        </div>
+        <div class="res-row">
+            <span>方案B: 合并劳务后</span>
+            <span id="taxB">0.00</span>
+        </div>
+        <div class="res-row highlight">
+            <span>劳务产生的实际税额 (B-A)</span>
+            <span id="taxDiff" style="color: var(--primary);">0.00</span>
+        </div>
+        <div style="font-size:12px; color:#999; margin-top:5px; text-align:right;">
+            * 劳务收入触达年度税率档位: <span id="topBracket" style="color:var(--text-main); font-weight:bold;">0%</span>
+        </div>
+    </div>
+
+    <div class="footer-bar">
+        <div>
+            <div class="final-label">预计补/退税</div>
+            <div style="font-size:10px; color:#999;">(劳务实际税额 - 已预缴)</div>
+        </div>
+        <div>
+            <span id="resTag" class="tag-res bg-gray">待计算</span>
+            <span id="finalResult" class="final-amt c-gray">0.00</span>
+        </div>
+    </div>
+
+<script>
+    const TAX_RATES = [
+        { max: 36000, rate: 0.03, deduction: 0 },
+        { max: 144000, rate: 0.10, deduction: 2520 },
+        { max: 300000, rate: 0.20, deduction: 16920 },
+        { max: 420000, rate: 0.25, deduction: 31920 },
+        { max: 660000, rate: 0.30, deduction: 52920 },
+        { max: 960000, rate: 0.35, deduction: 85920 },
+        { max: Infinity, rate: 0.45, deduction: 181920 }
+    ];
+
+    let monthlyIncomes = new Array(12).fill(0);
+
+    window.onload = function() {
+        renderMonths();
+        calculate();
+    };
+
+    function renderMonths() {
+        const container = document.getElementById('monthContainer');
+        // 保留表头
+        const header = container.querySelector('.list-header');
+        container.innerHTML = '';
+        container.appendChild(header);
+
+        for(let i=0; i<12; i++) {
+            const div = document.createElement('div');
+            div.className = 'month-item';
+            div.innerHTML = `
+                <div class="item-top">
+                    <div class="m-label">${i+1}月</div>
+                    <div class="m-input-wrapper">
+                        <input type="number" placeholder="0" oninput="updateMonth(${i}, this.value)" id="in_${i}">
+                    </div>
+                </div>
+                <div class="item-bottom">
+                    <div class="status-tag" id="status_${i}">-</div>
+                    <div class="result-text">应税: <span class="result-val" id="taxable_${i}">-</span></div>
+                    <div class="result-text" style="color:#333; font-weight:bold;">预扣: <span class="result-val" id="prepaid_${i}" style="color:var(--text-main)">0.00</span></div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    function updateMonth(i, val) {
+        monthlyIncomes[i] = val === '' ? 0 : parseFloat(val);
+        calculate();
+    }
+
+    function calculate() {
+        // 1. 算预扣 (灵活用工断档逻辑)
+        let seqIncome = 0, seqMonths = 0, seqTaxPaid = 0;
+        let totalLabor = 0, totalPrepaid = 0;
+
+        for(let i=0; i<12; i++) {
+            let income = monthlyIncomes[i];
+            totalLabor += income;
+            let curTax = 0;
+
+            let elStatus = document.getElementById(`status_${i}`);
+            let elTaxable = document.getElementById(`taxable_${i}`);
+            let elPrepaid = document.getElementById(`prepaid_${i}`);
+
+            if(income > 0) {
+                seqIncome += income;
+                seqMonths++;
+                let taxable = (seqIncome * 0.8) - (seqMonths * 5000);
+                if(taxable < 0) taxable = 0;
+
+                let b = getBracket(taxable);
+                let totalNeeded = (taxable * b.rate) - b.deduction;
+                curTax = totalNeeded - seqTaxPaid;
+                if(curTax < 0) curTax = 0;
+
+                seqTaxPaid += curTax;
+                totalPrepaid += curTax;
+
+                elStatus.innerText = seqMonths === 1 ? '新起算' : `连续${seqMonths}月`;
+                elStatus.style.background = seqMonths === 1 ? '#fff7e6' : '#f6ffed';
+                elStatus.style.color = seqMonths === 1 ? '#fa8c16' : '#52c41a';
+                
+                elTaxable.innerText = fmt(taxable);
+                elPrepaid.innerText = fmt(curTax);
+            } else {
+                seqIncome = 0; seqMonths = 0; seqTaxPaid = 0;
+                elStatus.innerText = '断档';
+                elStatus.style.background = '#f0f0f0';
+                elStatus.style.color = '#ccc';
+                elTaxable.innerText = '-';
+                elPrepaid.innerText = '0.00';
+            }
+        }
+
+        // 2. 算汇算 (边际分析)
+        let baseIncome = parseFloat(document.getElementById('baseIncome').value) || 0;
+        let deduction = parseFloat(document.getElementById('deduction').value) || 0;
+        let laborNet = totalLabor * 0.8;
+
+        let taxA = calcTax(baseIncome - deduction);
+        let incomeB = (baseIncome + laborNet) - deduction;
+        let taxB = calcTax(incomeB);
+        
+        let topBracket = getBracket(incomeB > 0 ? incomeB : 0);
+
+        let diff = taxB - taxA;
+        let final = diff - totalPrepaid;
+
+        // 3. 更新UI
+        document.getElementById('taxA').innerText = fmt(taxA);
+        document.getElementById('taxB').innerText = fmt(taxB);
+        document.getElementById('taxDiff').innerText = fmt(diff);
+        document.getElementById('topBracket').innerText = (topBracket.rate * 100) + '%';
+
+        let resAmt = document.getElementById('finalResult');
+        let resTag = document.getElementById('resTag');
+
+        if(Math.abs(final) < 0.01) {
+            resAmt.innerText = "0.00"; resAmt.className = "final-amt c-gray";
+            resTag.innerText = "无需补退"; resTag.className = "tag-res bg-gray";
+        } else if (final > 0) {
+            resAmt.innerText = fmt(final); resAmt.className = "final-amt c-red";
+            resTag.innerText = "需补税"; resTag.className = "tag-res bg-red";
+        } else {
+            resAmt.innerText = fmt(Math.abs(final)); resAmt.className = "final-amt c-green";
+            resTag.innerText = "应退税"; resTag.className = "tag-res bg-green";
+        }
+    }
+
+    function getBracket(amt) {
+        if(amt <= 0) return TAX_RATES[0];
+        let b = TAX_RATES.find(t => amt <= t.max);
+        return b || TAX_RATES[TAX_RATES.length - 1];
+    }
+    function calcTax(amt) {
+        if(amt < 0) amt = 0;
+        let b = getBracket(amt);
+        return (amt * b.rate) - b.deduction;
+    }
+    function fmt(n) {
+        return n.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function resetData() {
+        monthlyIncomes.fill(0);
+        document.getElementById('baseIncome').value = '';
+        document.getElementById('deduction').value = 60000;
+        for(let i=0; i<12; i++) document.getElementById(`in_${i}`).value = '';
+        calculate();
+    }
+    function loadDemo() {
+        resetData();
+        document.getElementById('baseIncome').value = 150000;
+        document.getElementById('deduction').value = 60000;
+        let demos = [0,0,0,0,0,24000,27500,0,0,27200,26000,28000];
+        demos.forEach((v,i) => {
+            if(v>0) {
+                document.getElementById(`in_${i}`).value = v;
+                monthlyIncomes[i] = v;
+            }
+        });
+        calculate();
+    }
+</script>
+
+</body>
+</html>
